@@ -91,9 +91,9 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
             color.g = 1 - percent;
             color.b = 1 - percent;
             m_Mat.SetColor("_Color", color);
-            m_Mat.SetFloat("_ShakeUvX", percent * 5f);
-            m_Mat.SetFloat("_ShakeUvY", percent * 5f);
-            m_Mat.SetFloat("_ShakeUvSpeed", percent * 20f);
+            m_Mat.SetFloat("_ShakeUvX", percent * 4f);
+            m_Mat.SetFloat("_ShakeUvY", percent * 4f);
+            //m_Mat.SetFloat("_ShakeUvSpeed", percent * 15f);
         }
 
     }
@@ -143,7 +143,6 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
 
     public void StartOperation()
     {
-        print("start");
         m_OperationFlag = true;
         m_PassengerSpawnTimer = FrameTimerManager.GetTimer(m_PassengerSpawnRate * GameManager.FramesPerTimeUnit,
             FrameTimerMode.Repeat);
@@ -157,7 +156,9 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
 
     public void EndOperation()
     {
-        print("end");
+        m_ThresholdOverflow = 0;
+        m_Mat.SetColor("_Color", Color.white);
+        m_Mat.DisableKeyword("SHAKEUV_ON");
         m_OperationFlag = false;
         GameManager.thumbsDown += m_Passengers.Count;
         m_Passengers.Clear();
@@ -189,6 +190,7 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
     {
         m_ThresholdOverflow = 0;
         m_Mat.SetColor("_Color", Color.white);
+        //m_Mat.SetFloat("_ShakeUvSpeed", 0);
         m_Mat.DisableKeyword("SHAKEUV_ON");
         GameManager.thumbsDown += m_Passengers.Count;
         m_Passengers.Clear();
@@ -233,6 +235,9 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
             UpdatePassengerImage();
             if (m_Passengers.Count < m_PassengerThreshold)
             {
+                m_ThresholdOverflow = 0;
+                m_Mat.SetColor("_Color", Color.white);
+                m_Mat.DisableKeyword("SHAKEUV_ON");
                 m_PassengerThresTimer.Stop();
             }
         }

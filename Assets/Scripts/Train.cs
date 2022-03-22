@@ -6,6 +6,15 @@ using UnityEngine.UI;
 
 public class TrainEvent : UnityEvent<Train> { }
 
+public class TrainInfo
+{
+    public Vector3 position;
+    public int passengers;
+    public int transfered;
+    public float speed;
+}
+
+
 public class Train : MonoBehaviour
 {
     [SerializeField] private float m_Speed;
@@ -19,14 +28,22 @@ public class Train : MonoBehaviour
 
 
 
+    private Material m_Mat;
     private Line m_Line;
     private Link m_Link;
     private Vector3[] m_WayPoints;
     private int m_Index;
     private bool m_IsMoving;
+    private int m_TransferedPassenger;
 
     public bool spawnFlag;
 
+
+    public float Speed
+    {
+        get { return m_Speed; }
+        set { m_Speed = value; }
+    }
 
     public bool IsMoving
     {
@@ -51,7 +68,10 @@ public class Train : MonoBehaviour
 
     private void Awake()
     {
+        m_Mat = m_SRenderer.material;
+        m_Mat.DisableKeyword("OUTBASE_ON");
         m_Passengers = new int[m_PassengerSlots.Count];
+        m_TransferedPassenger = 0;
         for (int i = 0; i < m_Passengers.Length; i++)
         {
             m_Passengers[i] = -1;
@@ -115,6 +135,7 @@ public class Train : MonoBehaviour
             {
                 m_Passengers[i] = -1;
                 m_PassengerSlots[i].enabled = false;
+                m_TransferedPassenger++;
                 GameManager.thumbsUp++;
             }
         }
@@ -143,6 +164,33 @@ public class Train : MonoBehaviour
         return boardedCount;
     }
 
+
+    public TrainInfo GetTrainInfo()
+    {
+        int count = 0;
+        for (int i = 0; i < m_Passengers.Length; i++)
+        {
+            if (m_Passengers[i] != -1)
+                count++;
+        }
+        TrainInfo info = new TrainInfo
+        {
+            passengers = count,
+            transfered = m_TransferedPassenger,
+            speed = m_Speed,
+            position = transform.position,
+        };
+        return info;
+    }
+
+
+    public void ActiveOutline(bool active)
+    {
+        if (active)
+            m_Mat.EnableKeyword("OUTBASE_ON");
+        else
+            m_Mat.DisableKeyword("OUTBASE_ON");
+    }
 
     private void OnDestroy()
     {

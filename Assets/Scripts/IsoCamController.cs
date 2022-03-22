@@ -67,7 +67,7 @@ public class IsoCamController : MonoBehaviour
     private void ClampCam()
     {
         float minGridExtent = new MinMax(m_Grid.GridData.halfDimension).Min;
-        m_Cam.orthographicSize = Mathf.Clamp(m_Cam.orthographicSize, 0.5f * minGridExtent, minGridExtent);
+        m_Cam.orthographicSize = Mathf.Clamp(m_Cam.orthographicSize, 0.3f * minGridExtent, minGridExtent);
 
 
         float upper = m_Grid.GridData.halfDimension.y - m_Cam.orthographicSize;

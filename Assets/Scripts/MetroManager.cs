@@ -19,6 +19,7 @@ public class MetroManager : MonoBehaviour
     [SerializeField] private Camera m_Cam;
     [SerializeField] private AddStationScript m_AddStationScript;
     [SerializeField] private LinePanelScript m_LinePanelScript;
+    [SerializeField] private PropertyPanelScript m_PropertyPanelScript;
     [SerializeField] private Toggle m_TrainToggle;
 
     [Header("Prefabs")]
@@ -270,8 +271,13 @@ public class MetroManager : MonoBehaviour
                     return;
                 FrameTimer timer = FrameTimerManager.GetTimer(30, FrameTimerMode.OneShot);
                 timer.OnTimeUp.AddListener(() => { train.StartTrain(); FrameTimerManager.DisposeTimer(timer); });
+                m_PropertyPanelScript.HideTrainProperty();
                 timer.Start();
-                //m_MetroState = MetroState.LineEditing;
+            }
+            else if(Physics.Raycast(ray, out RaycastHit hitinfo1, 100, LayerMask.GetMask("Train")))
+            {
+                Train train = hitinfo1.transform.GetComponent<Train>();
+                m_PropertyPanelScript.DisplayTrainProperty(train);
             }
         }
         else if (Input.GetMouseButtonDown(1))
@@ -281,7 +287,11 @@ public class MetroManager : MonoBehaviour
             {
                 Train train = hitinfo.transform.GetComponent<Train>();
                 train?.Line.RemoveTrain(train);
-                //m_MetroState = MetroState.LineEditing;
+                m_PropertyPanelScript.HideTrainProperty();
+            }
+            else if (Physics.Raycast(ray, out RaycastHit hitinfo2, 100, LayerMask.GetMask("Floor")))
+            {
+                m_PropertyPanelScript.HideTrainProperty();
             }
         }
     }
