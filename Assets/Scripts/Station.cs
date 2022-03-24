@@ -11,13 +11,23 @@ public class StationEvent:UnityEvent<Station>
 
 }
 
+public struct StationInfo
+{
+    public int type;
+    public int passengers;
+    public int spawnRate;
+    public int threshold;
+    public int thresholdTime;
+    public int countDown;
+    public bool isCountingDown;
+}
+
 public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDragHandler
 {
     [SerializeField] private int m_Type;
 
 
     [Header("Data")]
-    //[SerializeField] private int[] m_PassengerTypes;
     [SerializeField] private int m_PassengerSpawnRate;
     [SerializeField] private int m_PassengerThreshold;
     [SerializeField] private int m_PassengerThresholdTime;
@@ -28,13 +38,15 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
     [SerializeField] private GameObject m_PassengerHolder;
     [SerializeField] private Canvas m_Canvas;
 
-    [SerializeField] private Node m_Node;
+    private Node m_Node;
     private List<Line> m_Lines;
-    [SerializeField] private List<int> m_Passengers;
+    private List<int> m_Passengers;
     private List<GameObject> m_PassengerSlots;
     private bool m_OperationFlag;
     private FrameTimer m_PassengerSpawnTimer;
     private FrameTimer m_PassengerThresTimer;
+    private FrameTimer m_PassengerCountDownTimer;
+    private int m_CountDown;
     private int m_ThresholdOverflow;
     private Material m_Mat;
 
@@ -67,6 +79,7 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
         m_trainEvents = new Dictionary<Line, TrainEvent>();
         m_PassengerSlots = new List<GameObject>();
         m_Mat = GetComponent<SpriteRenderer>().material;
+        m_Mat.DisableKeyword("OUTBASE_ON");
         m_OperationFlag = false;
         m_ThresholdOverflow = 0;
         m_Type = 0;
@@ -93,7 +106,6 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
             m_Mat.SetColor("_Color", color);
             m_Mat.SetFloat("_ShakeUvX", percent * 4f);
             m_Mat.SetFloat("_ShakeUvY", percent * 4f);
-            //m_Mat.SetFloat("_ShakeUvSpeed", percent * 15f);
         }
 
     }
@@ -136,6 +148,8 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
             {
                 m_Mat.EnableKeyword("SHAKEUV_ON");
                 m_PassengerThresTimer.Start();
+                m_PassengerCountDownTimer.Start();
+                m_CountDown = m_PassengerThresholdTime;
             }
         }
         UpdatePassengerImage();
@@ -152,6 +166,9 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
         m_PassengerThresTimer = FrameTimerManager.GetTimer(m_PassengerThresholdTime * GameManager.FramesPerTimeUnit,
             FrameTimerMode.Repeat);
         m_PassengerThresTimer.OnTimeUp.AddListener(OnReachThreshold);
+
+        m_PassengerCountDownTimer = FrameTimerManager.GetTimer(GameManager.FramesPerTimeUnit, FrameTimerMode.Repeat);
+        m_PassengerCountDownTimer.OnTimeUp.AddListener(OnCountDown);
     }
 
     public void EndOperation()
@@ -165,6 +182,7 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
         UpdatePassengerImage();
         m_PassengerSpawnTimer.Stop();
         m_PassengerThresTimer.Stop();
+        m_PassengerCountDownTimer.Stop();
     }
 
     public void Init(int type)
@@ -173,6 +191,42 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
         m_Canvas.worldCamera = Camera.main;
     }
 
+    public void SetSpawnRate(int rate)
+    {
+        m_PassengerSpawnTimer.Stop();
+        FrameTimerManager.DisposeTimer(m_PassengerSpawnTimer);
+        m_PassengerSpawnRate = rate;
+        m_PassengerSpawnTimer = FrameTimerManager.GetTimer(m_PassengerSpawnRate * GameManager.FramesPerTimeUnit,
+    FrameTimerMode.Repeat);
+        m_PassengerSpawnTimer.OnTimeUp.AddListener(SpawnPassenger);
+        m_PassengerSpawnTimer.Start();
+    }
+
+    public void SetThresholdTime(int time)
+    {
+        m_PassengerThresTimer.Stop();
+        FrameTimerManager.DisposeTimer(m_PassengerSpawnTimer);
+        m_PassengerThresholdTime = time;
+        m_PassengerThresTimer = FrameTimerManager.GetTimer(m_PassengerThresholdTime * GameManager.FramesPerTimeUnit,
+    FrameTimerMode.Repeat);
+        m_PassengerThresTimer.OnTimeUp.AddListener(OnReachThreshold);
+
+        m_PassengerCountDownTimer.Stop();
+
+    }
+
+    public void SetThreshold(int threshold)
+    {
+        m_PassengerThreshold = threshold;
+    }
+
+    public void ActiveOutline(bool active)
+    {
+        if (active)
+            m_Mat.EnableKeyword("OUTBASE_ON");
+        else
+            m_Mat.DisableKeyword("OUTBASE_ON");
+    }
 
     private void UpdatePassengerImage()
     {
@@ -190,13 +244,18 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
     {
         m_ThresholdOverflow = 0;
         m_Mat.SetColor("_Color", Color.white);
-        //m_Mat.SetFloat("_ShakeUvSpeed", 0);
         m_Mat.DisableKeyword("SHAKEUV_ON");
         GameManager.thumbsDown += m_Passengers.Count;
         m_Passengers.Clear();
         UpdatePassengerImage();
         m_PassengerSpawnTimer.Reset();
         m_PassengerThresTimer.Stop();
+        m_PassengerCountDownTimer.Stop();
+    }
+
+    private void OnCountDown()
+    {
+        m_CountDown--;
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -212,6 +271,24 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
     public void OnEndDrag(PointerEventData eventData)
     {
         m_OnStationEndDrag.Invoke(this);
+    }
+
+    public StationInfo GetStationInfo()
+    {
+        bool isCounting = (m_PassengerCountDownTimer == null) ?
+            false : m_PassengerCountDownTimer.IsCounting;
+
+        StationInfo info = new StationInfo()
+        {
+            type = m_Type,
+            passengers = m_Passengers.Count,
+            spawnRate = m_PassengerSpawnRate,
+            threshold = m_PassengerThreshold,
+            thresholdTime = m_PassengerThresholdTime,
+            countDown = m_CountDown,
+            isCountingDown = isCounting,
+        };
+        return info;
     }
 
 
@@ -239,6 +316,7 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
                 m_Mat.SetColor("_Color", Color.white);
                 m_Mat.DisableKeyword("SHAKEUV_ON");
                 m_PassengerThresTimer.Stop();
+                m_PassengerCountDownTimer.Stop();
             }
         }
     }
@@ -257,5 +335,6 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
     {
         FrameTimerManager.DisposeTimer(m_PassengerSpawnTimer);
         FrameTimerManager.DisposeTimer(m_PassengerThresTimer);
+        FrameTimerManager.DisposeTimer(m_PassengerCountDownTimer);
     }
 }

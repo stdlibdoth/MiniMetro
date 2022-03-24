@@ -34,7 +34,6 @@ public class ControlPanelScripts : MonoBehaviour
         m_PauseBtn.gameObject.SetActive(true);
         m_PlayBtn.onClick.AddListener(OnControlBtnClick);
         m_PauseBtn.onClick.AddListener(OnControlBtnClick);
-        //m_SpeedSlider.onValueChanged.AddListener(OnSpeedSliderChange);
         onControlBtnClick = new BoolEvent();
         onSpeedSliderChange = new FloatEvent();
     }
@@ -64,11 +63,5 @@ public class ControlPanelScripts : MonoBehaviour
         }
         onControlBtnClick.Invoke(m_PlayingFlag);
     }
-
-    //private void OnSpeedSliderChange(float sliderValue)
-    //{
-    //    onSpeedSliderChange.Invoke(sliderValue);
-    //    m_TMPText.text = "X" + ((int)sliderValue).ToString();
-    //}
 
 }

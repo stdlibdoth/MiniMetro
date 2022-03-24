@@ -79,6 +79,7 @@ public class MetroManager : MonoBehaviour
     {
         m_MetroState = toggle ? MetroState.StationAdding : MetroState.LineEditing;
         m_TrainToggle.SetIsOnWithoutNotify(false);
+        m_PropertyPanelScript.HideStationProperty();
     }
 
     #region Train Related Handler
@@ -87,6 +88,7 @@ public class MetroManager : MonoBehaviour
     {
         m_MetroState = toggle ? MetroState.TrainEditing : MetroState.LineEditing;
         m_AddStationScript.SetAddButton(false);
+        m_PropertyPanelScript.HideStationProperty();
     }
 
     #endregion
@@ -137,6 +139,10 @@ public class MetroManager : MonoBehaviour
                     Destroy(station.gameObject);
             }
         }
+        else if(Input.GetMouseButtonUp(0))
+        {
+            m_PropertyPanelScript.DisplayStationProperty(station);
+        }
     }
 
     #endregion
@@ -173,6 +179,15 @@ public class MetroManager : MonoBehaviour
 
     private void LineEditUpdate()
     {
+        if (Input.GetMouseButtonDown(1))
+        {
+            Ray ray = m_Cam.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hitinfo, 100, LayerMask.GetMask("Floor")))
+            {
+                m_PropertyPanelScript.HideStationProperty();
+            }
+        }
+
         if (m_Line == null)
             return;
         if (Input.GetMouseButtonDown(0) && m_LineEditingState == 0)
@@ -199,55 +214,57 @@ public class MetroManager : MonoBehaviour
             {
                 Station endStation = hitinfo.transform.GetComponent<Station>();
                 Node fromNode = m_fromStation.Node;
-
-                Node endNode = endStation.Node;
-                if (!m_Line.Contains(endNode) && m_Line.Contains(fromNode))
+                if (m_fromStation != endStation)
                 {
-                    print("1");
-                    Node nextNode = m_Line.NextNode(fromNode);
-                    Node prevNode = m_Line.PrevNode(fromNode);
-                    if (nextNode == fromNode)
-                        m_Line.AppendTail(endNode);
-                    else if (prevNode == fromNode)
-                        m_Line.ExtendHead(endNode);
-                    else
-                        m_Line.InsertNodeBetween(endNode, fromNode, nextNode);
-                    endStation.Lines.Add(m_Line);
-                    m_Line.AddStation(endStation);
-                }
-                else if (m_Line.Contains(endNode) && !m_Line.Contains(fromNode))
-                {
-                    print("2");
-                    Node nextNode = m_Line.NextNode(endNode);
-                    Node prevNode = m_Line.PrevNode(endNode);
-                    if (nextNode == endNode)
-                        m_Line.AppendTail(fromNode,true);
-                    else if (prevNode == endNode)
-                        m_Line.ExtendHead(fromNode, true);
-                    else
-                        m_Line.InsertNodeBetween(fromNode, endNode, nextNode);
-                    m_fromStation.Lines.Add(m_Line);
-                    m_Line.AddStation(m_fromStation);
-                }
-                else if (!m_Line.Contains(endStation.Node) && !m_Line.Contains(fromNode))
-                {
-                    if (m_Line.Nodes.Length == 0)
+                    Node endNode = endStation.Node;
+                    if (!m_Line.Contains(endNode) && m_Line.Contains(fromNode))
                     {
-                        print("3");
-                        m_Line.AppendTail(fromNode);
-                        m_Line.AppendTail(endNode);
-                        m_Line.AddStation(m_fromStation);
-                        m_Line.AddStation(endStation);
-                        m_fromStation.Lines.Add(m_Line);
+                        print("1");
+                        Node nextNode = m_Line.NextNode(fromNode);
+                        Node prevNode = m_Line.PrevNode(fromNode);
+                        if (nextNode == fromNode)
+                            m_Line.AppendTail(endNode);
+                        else if (prevNode == fromNode)
+                            m_Line.ExtendHead(endNode);
+                        else
+                            m_Line.InsertNodeBetween(endNode, fromNode, nextNode);
                         endStation.Lines.Add(m_Line);
+                        m_Line.AddStation(endStation);
                     }
-                }
-                else
-                {
-                    print("4");
-                    if (fromNode == m_Line.PrevNode(endNode) || fromNode == m_Line.NextNode(endNode))
+                    else if (m_Line.Contains(endNode) && !m_Line.Contains(fromNode))
                     {
-                        m_Line.Replace(fromNode, endNode);
+                        print("2");
+                        Node nextNode = m_Line.NextNode(endNode);
+                        Node prevNode = m_Line.PrevNode(endNode);
+                        if (nextNode == endNode)
+                            m_Line.AppendTail(fromNode, true);
+                        else if (prevNode == endNode)
+                            m_Line.ExtendHead(fromNode, true);
+                        else
+                            m_Line.InsertNodeBetween(fromNode, endNode, nextNode);
+                        m_fromStation.Lines.Add(m_Line);
+                        m_Line.AddStation(m_fromStation);
+                    }
+                    else if (!m_Line.Contains(endStation.Node) && !m_Line.Contains(fromNode))
+                    {
+                        if (m_Line.Nodes.Length == 0)
+                        {
+                            print("3");
+                            m_Line.AppendTail(fromNode);
+                            m_Line.AppendTail(endNode);
+                            m_Line.AddStation(m_fromStation);
+                            m_Line.AddStation(endStation);
+                            m_fromStation.Lines.Add(m_Line);
+                            endStation.Lines.Add(m_Line);
+                        }
+                    }
+                    else
+                    {
+                        print("4");
+                        if (fromNode == m_Line.PrevNode(endNode) || fromNode == m_Line.NextNode(endNode))
+                        {
+                            m_Line.Replace(fromNode, endNode);
+                        }
                     }
                 }
             }
