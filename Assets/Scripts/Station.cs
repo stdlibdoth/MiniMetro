@@ -37,6 +37,7 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
     [Header("Reference")]
     [SerializeField] private GameObject m_PassengerHolder;
     [SerializeField] private Canvas m_Canvas;
+    [SerializeField] private SpriteRenderer m_SRenderer;
 
     private Node m_Node;
     private List<Line> m_Lines;
@@ -78,8 +79,9 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
         m_Lines = new List<Line>();
         m_trainEvents = new Dictionary<Line, TrainEvent>();
         m_PassengerSlots = new List<GameObject>();
-        m_Mat = GetComponent<SpriteRenderer>().material;
-        m_Mat.DisableKeyword("OUTBASE_ON");
+        m_Mat = m_SRenderer.material;
+        //m_Mat.DisableKeyword("OUTBASE_ON");
+        m_Mat.EnableKeyword("SHAKEUV_ON");
         m_OperationFlag = false;
         m_ThresholdOverflow = 0;
         m_Type = 0;
@@ -146,7 +148,7 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
             m_Passengers.Add(passengerTypes[index]);
             if (m_Passengers.Count == m_PassengerThreshold)
             {
-                m_Mat.EnableKeyword("SHAKEUV_ON");
+                //m_Mat.EnableKeyword("SHAKEUV_ON");
                 m_PassengerThresTimer.Start();
                 m_PassengerCountDownTimer.Start();
                 m_CountDown = m_PassengerThresholdTime;
@@ -173,9 +175,12 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
 
     public void EndOperation()
     {
+        print("end");
         m_ThresholdOverflow = 0;
         m_Mat.SetColor("_Color", Color.white);
-        m_Mat.DisableKeyword("SHAKEUV_ON");
+        m_Mat.SetFloat("_ShakeUvX", 0);
+        m_Mat.SetFloat("_ShakeUvY", 0);
+        //m_Mat.DisableKeyword("SHAKEUV_ON");
         m_OperationFlag = false;
         GameManager.thumbsDown += m_Passengers.Count;
         m_Passengers.Clear();
@@ -242,9 +247,12 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
 
     private void OnReachThreshold()
     {
+        print("reach");
         m_ThresholdOverflow = 0;
         m_Mat.SetColor("_Color", Color.white);
-        m_Mat.DisableKeyword("SHAKEUV_ON");
+        //m_Mat.DisableKeyword("SHAKEUV_ON");
+        m_Mat.SetFloat("_ShakeUvX", 0);
+        m_Mat.SetFloat("_ShakeUvY", 0);
         GameManager.thumbsDown += m_Passengers.Count;
         m_Passengers.Clear();
         UpdatePassengerImage();
@@ -312,9 +320,12 @@ public class Station : MonoBehaviour, IDragHandler, IPointerClickHandler, IEndDr
             UpdatePassengerImage();
             if (m_Passengers.Count < m_PassengerThreshold)
             {
+                print("EEE");
                 m_ThresholdOverflow = 0;
                 m_Mat.SetColor("_Color", Color.white);
-                m_Mat.DisableKeyword("SHAKEUV_ON");
+                m_Mat.SetFloat("_ShakeUvX", 0);
+                m_Mat.SetFloat("_ShakeUvY", 0);
+                //m_Mat.DisableKeyword("SHAKEUV_ON");
                 m_PassengerThresTimer.Stop();
                 m_PassengerCountDownTimer.Stop();
             }

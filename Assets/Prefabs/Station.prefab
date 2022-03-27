@@ -108,9 +108,7 @@ MonoBehaviour:
   m_PassengerThresholdTime: 4
   m_PassengerHolder: {fileID: 8528788352639875845}
   m_Canvas: {fileID: 8272697276513177856}
-  m_Node:
-    m_Coord: {x: 0, y: 0}
-  m_Passengers: 
+  m_SRenderer: {fileID: 5292693093643710847}
 --- !u!65 &4197140769345963485
 BoxCollider:
   m_ObjectHideFlags: 0
